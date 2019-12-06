@@ -4,7 +4,7 @@
 
 include config.mk
 
-SRC = st.c x.c
+SRC = st.c x.c payam.c
 OBJ = $(SRC:.c=.o)
 
 all: options st

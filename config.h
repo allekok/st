@@ -1,5 +1,8 @@
 /* See LICENSE file for copyright and license details. */
 
+/* Include my library's header file */
+#include "payam.h"
+
 /*
  * appearance
  *
@@ -83,34 +86,32 @@ char *termname = "st";
 unsigned int tabspaces = 8;
 
 /* Terminal colors (16 first used in escape sequence) */
-static const char *colorname[] = {
+char *colorname_def[] = {
 	/* 8 normal colors */
-	"#222",
-	"#fa0", // git (-)
-	"#af0", // git (+)
-	"yellow3",
-	"blue2",
-	"magenta3",
-	"cyan3",
-	"#fff",
+	"#ffffff",
+	"#ee0000", // git (-)
+	"#0000ee", // git (+)
+	"#0000ee",
+	"#0000ee",
+	"#0000ee",
+	"#0000ee",
+	"#000000",
 
 	/* 8 bright colors */
-	"gray50",
-	"red",
-	"#0f9", // executable
-	"#af0",
-	"#af0",
-	"magenta",
-	"cyan",
-	"white",
+	"#0000ee",
+	"#0000ee",
+	"#0000ee", // executable
+	"#0000ee",
+	"#0000ee",
+	"#0000ee",
+	"#0000ee",
+	"#000000",
 
 	[255] = 0,
 
 	/* more colors can be added after 255 to use with DefaultXX */
-	"#cccccc",
-	"#555555",
+	"#000000",
 };
-
 
 /*
  * Default colors (colorname index)
@@ -118,7 +119,7 @@ static const char *colorname[] = {
  */
 unsigned int defaultfg = 7;
 unsigned int defaultbg = 0;
-static unsigned int defaultcs = 256;
+static unsigned int defaultcs = 7;
 static unsigned int defaultrcs = 257;
 
 /*

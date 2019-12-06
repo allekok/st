@@ -731,6 +731,7 @@ sixd_to_16bit(int x)
 int
 xloadcolor(int i, const char *name, Color *ncolor)
 {
+  char **colorname = get_colorname(colorname_def);
 	XRenderColor color = { .alpha = 0xffff };
 
 	if (!name) {
@@ -755,6 +756,7 @@ xloadcolor(int i, const char *name, Color *ncolor)
 void
 xloadcols(void)
 {
+  char **colorname = get_colorname(colorname_def);
 	int i;
 	static int loaded;
 	Color *cp;
@@ -1061,6 +1063,7 @@ ximdestroy(XIM xim, XPointer client, XPointer call)
 void
 xinit(int cols, int rows)
 {
+  char **colorname = get_colorname(colorname_def);
 	XGCValues gcvalues;
 	Cursor cursor;
 	Window parent;
