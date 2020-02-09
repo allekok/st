@@ -29,7 +29,7 @@ char **get_colorname (char **def)
   strcat(path, home);
   strcat(path, "/");
   
-  if( T->tm_hour >= 8 && T->tm_hour < 22 )
+  if( T->tm_hour >= 6 && T->tm_hour <= 23 )
     strcat(path, COLOR_LIGHT_FN);
   else
     strcat(path, COLOR_DARK_FN);
