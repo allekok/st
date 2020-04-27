@@ -46,12 +46,7 @@ char **get_colorname (char **def)
   fclose(f);
   
   def[0] = c[0]; // bg
-  def[7] = def[15] = def[256] = c[1]; // fg
-  def[2] = def[3] = def[4] =
-    def[5] = def[6] = def[8] =
-    def[9] = def[10] = def[11] =
-    def[12] = def[13] = def[14] = c[2]; // pos
-  def[1] = c[3]; // neg
+  def[7] = c[1]; // fg
   
   return def;
 }

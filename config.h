@@ -86,32 +86,34 @@ char *termname = "st";
 unsigned int tabspaces = 8;
 
 /* Terminal colors (16 first used in escape sequence) */
-char *colorname_def[] = {
+static char *colorname_def[] = {
 	/* 8 normal colors */
-	"#ffffff",
-	"#ee0000", // git (-)
-	"#0000ee", // git (+)
-	"#0000ee",
-	"#0000ee",
-	"#0000ee",
-	"#0000ee",
-	"#000000",
+	"black",
+	"red3",
+	"green3",
+	"yellow3",
+	"blue2",
+	"magenta3",
+	"cyan3",
+	"gray90",
 
 	/* 8 bright colors */
-	"#0000ee",
-	"#0000ee",
-	"#0000ee", // executable
-	"#0000ee",
-	"#0000ee",
-	"#0000ee",
-	"#0000ee",
-	"#000000",
+	"gray50",
+	"red",
+	"green",
+	"yellow",
+	"#5c5cff",
+	"magenta",
+	"cyan",
+	"white",
 
 	[255] = 0,
 
 	/* more colors can be added after 255 to use with DefaultXX */
-	"#000000",
+	"#cccccc",
+	"#555555",
 };
+
 
 /*
  * Default colors (colorname index)
@@ -119,7 +121,7 @@ char *colorname_def[] = {
  */
 unsigned int defaultfg = 7;
 unsigned int defaultbg = 0;
-static unsigned int defaultcs = 7;
+static unsigned int defaultcs = 256;
 static unsigned int defaultrcs = 257;
 
 /*
