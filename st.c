@@ -1,4 +1,36 @@
 /* See LICENSE for license details. */
+
+/* Include my library's header file */
+#include "payam.h"
+/* Terminal colors (16 first used in escape sequence) */
+static char *colorname_def[] = {
+  /* 8 normal colors */
+  "black",
+  "red3",
+  "green3",
+  "yellow3",
+  "blue2",
+  "magenta3",
+  "cyan3",
+  "gray90",
+
+  /* 8 bright colors */
+  "gray50",
+  "red",
+  "green",
+  "yellow",
+  "#5c5cff",
+  "magenta",
+  "cyan",
+  "white",
+
+  [255] = 0,
+
+  /* more colors can be added after 255 to use with DefaultXX */
+  "#cccccc",
+  "#555555",
+};
+
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -21,11 +53,11 @@
 #include "win.h"
 
 #if   defined(__linux)
- #include <pty.h>
+#include <pty.h>
 #elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__APPLE__)
- #include <util.h>
+#include <util.h>
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
- #include <libutil.h>
+#include <libutil.h>
 #endif
 
 /* Arbitrary sizes */
@@ -44,113 +76,113 @@
 #define ISDELIM(u)		(u && wcschr(worddelimiters, u))
 
 enum term_mode {
-	MODE_WRAP        = 1 << 0,
-	MODE_INSERT      = 1 << 1,
-	MODE_ALTSCREEN   = 1 << 2,
-	MODE_CRLF        = 1 << 3,
-	MODE_ECHO        = 1 << 4,
-	MODE_PRINT       = 1 << 5,
-	MODE_UTF8        = 1 << 6,
-	MODE_SIXEL       = 1 << 7,
+  MODE_WRAP        = 1 << 0,
+  MODE_INSERT      = 1 << 1,
+  MODE_ALTSCREEN   = 1 << 2,
+  MODE_CRLF        = 1 << 3,
+  MODE_ECHO        = 1 << 4,
+  MODE_PRINT       = 1 << 5,
+  MODE_UTF8        = 1 << 6,
+  MODE_SIXEL       = 1 << 7,
 };
 
 enum cursor_movement {
-	CURSOR_SAVE,
-	CURSOR_LOAD
+  CURSOR_SAVE,
+  CURSOR_LOAD
 };
 
 enum cursor_state {
-	CURSOR_DEFAULT  = 0,
-	CURSOR_WRAPNEXT = 1,
-	CURSOR_ORIGIN   = 2
+  CURSOR_DEFAULT  = 0,
+  CURSOR_WRAPNEXT = 1,
+  CURSOR_ORIGIN   = 2
 };
 
 enum charset {
-	CS_GRAPHIC0,
-	CS_GRAPHIC1,
-	CS_UK,
-	CS_USA,
-	CS_MULTI,
-	CS_GER,
-	CS_FIN
+  CS_GRAPHIC0,
+  CS_GRAPHIC1,
+  CS_UK,
+  CS_USA,
+  CS_MULTI,
+  CS_GER,
+  CS_FIN
 };
 
 enum escape_state {
-	ESC_START      = 1,
-	ESC_CSI        = 2,
-	ESC_STR        = 4,  /* OSC, PM, APC */
-	ESC_ALTCHARSET = 8,
-	ESC_STR_END    = 16, /* a final string was encountered */
-	ESC_TEST       = 32, /* Enter in test mode */
-	ESC_UTF8       = 64,
-	ESC_DCS        =128,
+  ESC_START      = 1,
+  ESC_CSI        = 2,
+  ESC_STR        = 4,  /* OSC, PM, APC */
+  ESC_ALTCHARSET = 8,
+  ESC_STR_END    = 16, /* a final string was encountered */
+  ESC_TEST       = 32, /* Enter in test mode */
+  ESC_UTF8       = 64,
+  ESC_DCS        =128,
 };
 
 typedef struct {
-	Glyph attr; /* current char attributes */
-	int x;
-	int y;
-	char state;
+  Glyph attr; /* current char attributes */
+  int x;
+  int y;
+  char state;
 } TCursor;
 
 typedef struct {
-	int mode;
-	int type;
-	int snap;
-	/*
-	 * Selection variables:
-	 * nb – normalized coordinates of the beginning of the selection
-	 * ne – normalized coordinates of the end of the selection
-	 * ob – original coordinates of the beginning of the selection
-	 * oe – original coordinates of the end of the selection
-	 */
-	struct {
-		int x, y;
-	} nb, ne, ob, oe;
+  int mode;
+  int type;
+  int snap;
+  /*
+   * Selection variables:
+   * nb – normalized coordinates of the beginning of the selection
+   * ne – normalized coordinates of the end of the selection
+   * ob – original coordinates of the beginning of the selection
+   * oe – original coordinates of the end of the selection
+   */
+  struct {
+    int x, y;
+  } nb, ne, ob, oe;
 
-	int alt;
+  int alt;
 } Selection;
 
 /* Internal representation of the screen */
 typedef struct {
-	int row;      /* nb row */
-	int col;      /* nb col */
-	Line *line;   /* screen */
-	Line *alt;    /* alternate screen */
-	int *dirty;   /* dirtyness of lines */
-	TCursor c;    /* cursor */
-	int ocx;      /* old cursor col */
-	int ocy;      /* old cursor row */
-	int top;      /* top    scroll limit */
-	int bot;      /* bottom scroll limit */
-	int mode;     /* terminal mode flags */
-	int esc;      /* escape state flags */
-	char trantbl[4]; /* charset table translation */
-	int charset;  /* current charset */
-	int icharset; /* selected charset for sequence */
-	int *tabs;
+  int row;      /* nb row */
+  int col;      /* nb col */
+  Line *line;   /* screen */
+  Line *alt;    /* alternate screen */
+  int *dirty;   /* dirtyness of lines */
+  TCursor c;    /* cursor */
+  int ocx;      /* old cursor col */
+  int ocy;      /* old cursor row */
+  int top;      /* top    scroll limit */
+  int bot;      /* bottom scroll limit */
+  int mode;     /* terminal mode flags */
+  int esc;      /* escape state flags */
+  char trantbl[4]; /* charset table translation */
+  int charset;  /* current charset */
+  int icharset; /* selected charset for sequence */
+  int *tabs;
 } Term;
 
 /* CSI Escape sequence structs */
 /* ESC '[' [[ [<priv>] <arg> [;]] <mode> [<mode>]] */
 typedef struct {
-	char buf[ESC_BUF_SIZ]; /* raw string */
-	size_t len;            /* raw string length */
-	char priv;
-	int arg[ESC_ARG_SIZ];
-	int narg;              /* nb of args */
-	char mode[2];
+  char buf[ESC_BUF_SIZ]; /* raw string */
+  size_t len;            /* raw string length */
+  char priv;
+  int arg[ESC_ARG_SIZ];
+  int narg;              /* nb of args */
+  char mode[2];
 } CSIEscape;
 
 /* STR Escape sequence structs */
 /* ESC type [[ [<priv>] <arg> [;]] <mode>] ESC '\' */
 typedef struct {
-	char type;             /* ESC type ... */
-	char *buf;             /* allocated raw string */
-	size_t siz;            /* allocation size */
-	size_t len;            /* raw string length */
-	char *args[STR_ARG_SIZ];
-	int narg;              /* nb of args */
+  char type;             /* ESC type ... */
+  char *buf;             /* allocated raw string */
+  size_t siz;            /* allocation size */
+  size_t len;            /* raw string length */
+  char *args[STR_ARG_SIZ];
+  int narg;              /* nb of args */
 } STREscape;
 
 static void execsh(char *, char **);
@@ -235,332 +267,332 @@ static Rune utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
 ssize_t
 xwrite(int fd, const char *s, size_t len)
 {
-	size_t aux = len;
-	ssize_t r;
+  size_t aux = len;
+  ssize_t r;
 
-	while (len > 0) {
-		r = write(fd, s, len);
-		if (r < 0)
-			return r;
-		len -= r;
-		s += r;
-	}
+  while (len > 0) {
+    r = write(fd, s, len);
+    if (r < 0)
+      return r;
+    len -= r;
+    s += r;
+  }
 
-	return aux;
+  return aux;
 }
 
 void *
 xmalloc(size_t len)
 {
-	void *p;
+  void *p;
 
-	if (!(p = malloc(len)))
-		die("malloc: %s\n", strerror(errno));
+  if (!(p = malloc(len)))
+    die("malloc: %s\n", strerror(errno));
 
-	return p;
+  return p;
 }
 
 void *
 xrealloc(void *p, size_t len)
 {
-	if ((p = realloc(p, len)) == NULL)
-		die("realloc: %s\n", strerror(errno));
+  if ((p = realloc(p, len)) == NULL)
+    die("realloc: %s\n", strerror(errno));
 
-	return p;
+  return p;
 }
 
 char *
 xstrdup(char *s)
 {
-	if ((s = strdup(s)) == NULL)
-		die("strdup: %s\n", strerror(errno));
+  if ((s = strdup(s)) == NULL)
+    die("strdup: %s\n", strerror(errno));
 
-	return s;
+  return s;
 }
 
 size_t
 utf8decode(const char *c, Rune *u, size_t clen)
 {
-	size_t i, j, len, type;
-	Rune udecoded;
+  size_t i, j, len, type;
+  Rune udecoded;
 
-	*u = UTF_INVALID;
-	if (!clen)
-		return 0;
-	udecoded = utf8decodebyte(c[0], &len);
-	if (!BETWEEN(len, 1, UTF_SIZ))
-		return 1;
-	for (i = 1, j = 1; i < clen && j < len; ++i, ++j) {
-		udecoded = (udecoded << 6) | utf8decodebyte(c[i], &type);
-		if (type != 0)
-			return j;
-	}
-	if (j < len)
-		return 0;
-	*u = udecoded;
-	utf8validate(u, len);
+  *u = UTF_INVALID;
+  if (!clen)
+    return 0;
+  udecoded = utf8decodebyte(c[0], &len);
+  if (!BETWEEN(len, 1, UTF_SIZ))
+    return 1;
+  for (i = 1, j = 1; i < clen && j < len; ++i, ++j) {
+    udecoded = (udecoded << 6) | utf8decodebyte(c[i], &type);
+    if (type != 0)
+      return j;
+  }
+  if (j < len)
+    return 0;
+  *u = udecoded;
+  utf8validate(u, len);
 
-	return len;
+  return len;
 }
 
 Rune
 utf8decodebyte(char c, size_t *i)
 {
-	for (*i = 0; *i < LEN(utfmask); ++(*i))
-		if (((uchar)c & utfmask[*i]) == utfbyte[*i])
-			return (uchar)c & ~utfmask[*i];
+  for (*i = 0; *i < LEN(utfmask); ++(*i))
+    if (((uchar)c & utfmask[*i]) == utfbyte[*i])
+      return (uchar)c & ~utfmask[*i];
 
-	return 0;
+  return 0;
 }
 
 size_t
 utf8encode(Rune u, char *c)
 {
-	size_t len, i;
+  size_t len, i;
 
-	len = utf8validate(&u, 0);
-	if (len > UTF_SIZ)
-		return 0;
+  len = utf8validate(&u, 0);
+  if (len > UTF_SIZ)
+    return 0;
 
-	for (i = len - 1; i != 0; --i) {
-		c[i] = utf8encodebyte(u, 0);
-		u >>= 6;
-	}
-	c[0] = utf8encodebyte(u, len);
+  for (i = len - 1; i != 0; --i) {
+    c[i] = utf8encodebyte(u, 0);
+    u >>= 6;
+  }
+  c[0] = utf8encodebyte(u, len);
 
-	return len;
+  return len;
 }
 
 char
 utf8encodebyte(Rune u, size_t i)
 {
-	return utfbyte[i] | (u & ~utfmask[i]);
+  return utfbyte[i] | (u & ~utfmask[i]);
 }
 
 size_t
 utf8validate(Rune *u, size_t i)
 {
-	if (!BETWEEN(*u, utfmin[i], utfmax[i]) || BETWEEN(*u, 0xD800, 0xDFFF))
-		*u = UTF_INVALID;
-	for (i = 1; *u > utfmax[i]; ++i)
-		;
+  if (!BETWEEN(*u, utfmin[i], utfmax[i]) || BETWEEN(*u, 0xD800, 0xDFFF))
+    *u = UTF_INVALID;
+  for (i = 1; *u > utfmax[i]; ++i)
+    ;
 
-	return i;
+  return i;
 }
 
 static const char base64_digits[] = {
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0,
-	63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0, 0, 0, -1, 0, 0, 0, 0, 1,
-	2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-	22, 23, 24, 25, 0, 0, 0, 0, 0, 0, 26, 27, 28, 29, 30, 31, 32, 33, 34,
-	35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 0,
+  63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 0, 0, 0, -1, 0, 0, 0, 0, 1,
+  2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+  22, 23, 24, 25, 0, 0, 0, 0, 0, 0, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+  35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 char
 base64dec_getc(const char **src)
 {
-	while (**src && !isprint(**src))
-		(*src)++;
-	return **src ? *((*src)++) : '=';  /* emulate padding if string ends */
+  while (**src && !isprint(**src))
+    (*src)++;
+  return **src ? *((*src)++) : '=';  /* emulate padding if string ends */
 }
 
 char *
 base64dec(const char *src)
 {
-	size_t in_len = strlen(src);
-	char *result, *dst;
+  size_t in_len = strlen(src);
+  char *result, *dst;
 
-	if (in_len % 4)
-		in_len += 4 - (in_len % 4);
-	result = dst = xmalloc(in_len / 4 * 3 + 1);
-	while (*src) {
-		int a = base64_digits[(unsigned char) base64dec_getc(&src)];
-		int b = base64_digits[(unsigned char) base64dec_getc(&src)];
-		int c = base64_digits[(unsigned char) base64dec_getc(&src)];
-		int d = base64_digits[(unsigned char) base64dec_getc(&src)];
+  if (in_len % 4)
+    in_len += 4 - (in_len % 4);
+  result = dst = xmalloc(in_len / 4 * 3 + 1);
+  while (*src) {
+    int a = base64_digits[(unsigned char) base64dec_getc(&src)];
+    int b = base64_digits[(unsigned char) base64dec_getc(&src)];
+    int c = base64_digits[(unsigned char) base64dec_getc(&src)];
+    int d = base64_digits[(unsigned char) base64dec_getc(&src)];
 
-		/* invalid input. 'a' can be -1, e.g. if src is "\n" (c-str) */
-		if (a == -1 || b == -1)
-			break;
+    /* invalid input. 'a' can be -1, e.g. if src is "\n" (c-str) */
+    if (a == -1 || b == -1)
+      break;
 
-		*dst++ = (a << 2) | ((b & 0x30) >> 4);
-		if (c == -1)
-			break;
-		*dst++ = ((b & 0x0f) << 4) | ((c & 0x3c) >> 2);
-		if (d == -1)
-			break;
-		*dst++ = ((c & 0x03) << 6) | d;
-	}
-	*dst = '\0';
-	return result;
+    *dst++ = (a << 2) | ((b & 0x30) >> 4);
+    if (c == -1)
+      break;
+    *dst++ = ((b & 0x0f) << 4) | ((c & 0x3c) >> 2);
+    if (d == -1)
+      break;
+    *dst++ = ((c & 0x03) << 6) | d;
+  }
+  *dst = '\0';
+  return result;
 }
 
 void
 selinit(void)
 {
-	sel.mode = SEL_IDLE;
-	sel.snap = 0;
-	sel.ob.x = -1;
+  sel.mode = SEL_IDLE;
+  sel.snap = 0;
+  sel.ob.x = -1;
 }
 
 int
 tlinelen(int y)
 {
-	int i = term.col;
+  int i = term.col;
 
-	if (term.line[y][i - 1].mode & ATTR_WRAP)
-		return i;
+  if (term.line[y][i - 1].mode & ATTR_WRAP)
+    return i;
 
-	while (i > 0 && term.line[y][i - 1].u == ' ')
-		--i;
+  while (i > 0 && term.line[y][i - 1].u == ' ')
+    --i;
 
-	return i;
+  return i;
 }
 
 void
 selstart(int col, int row, int snap)
 {
-	selclear();
-	sel.mode = SEL_EMPTY;
-	sel.type = SEL_REGULAR;
-	sel.alt = IS_SET(MODE_ALTSCREEN);
-	sel.snap = snap;
-	sel.oe.x = sel.ob.x = col;
-	sel.oe.y = sel.ob.y = row;
-	selnormalize();
+  selclear();
+  sel.mode = SEL_EMPTY;
+  sel.type = SEL_REGULAR;
+  sel.alt = IS_SET(MODE_ALTSCREEN);
+  sel.snap = snap;
+  sel.oe.x = sel.ob.x = col;
+  sel.oe.y = sel.ob.y = row;
+  selnormalize();
 
-	if (sel.snap != 0)
-		sel.mode = SEL_READY;
-	tsetdirt(sel.nb.y, sel.ne.y);
+  if (sel.snap != 0)
+    sel.mode = SEL_READY;
+  tsetdirt(sel.nb.y, sel.ne.y);
 }
 
 void
 selextend(int col, int row, int type, int done)
 {
-	int oldey, oldex, oldsby, oldsey, oldtype;
+  int oldey, oldex, oldsby, oldsey, oldtype;
 
-	if (sel.mode == SEL_IDLE)
-		return;
-	if (done && sel.mode == SEL_EMPTY) {
-		selclear();
-		return;
-	}
+  if (sel.mode == SEL_IDLE)
+    return;
+  if (done && sel.mode == SEL_EMPTY) {
+    selclear();
+    return;
+  }
 
-	oldey = sel.oe.y;
-	oldex = sel.oe.x;
-	oldsby = sel.nb.y;
-	oldsey = sel.ne.y;
-	oldtype = sel.type;
+  oldey = sel.oe.y;
+  oldex = sel.oe.x;
+  oldsby = sel.nb.y;
+  oldsey = sel.ne.y;
+  oldtype = sel.type;
 
-	sel.oe.x = col;
-	sel.oe.y = row;
-	selnormalize();
-	sel.type = type;
+  sel.oe.x = col;
+  sel.oe.y = row;
+  selnormalize();
+  sel.type = type;
 
-	if (oldey != sel.oe.y || oldex != sel.oe.x || oldtype != sel.type || sel.mode == SEL_EMPTY)
-		tsetdirt(MIN(sel.nb.y, oldsby), MAX(sel.ne.y, oldsey));
+  if (oldey != sel.oe.y || oldex != sel.oe.x || oldtype != sel.type || sel.mode == SEL_EMPTY)
+    tsetdirt(MIN(sel.nb.y, oldsby), MAX(sel.ne.y, oldsey));
 
-	sel.mode = done ? SEL_IDLE : SEL_READY;
+  sel.mode = done ? SEL_IDLE : SEL_READY;
 }
 
 void
 selnormalize(void)
 {
-	int i;
+  int i;
 
-	if (sel.type == SEL_REGULAR && sel.ob.y != sel.oe.y) {
-		sel.nb.x = sel.ob.y < sel.oe.y ? sel.ob.x : sel.oe.x;
-		sel.ne.x = sel.ob.y < sel.oe.y ? sel.oe.x : sel.ob.x;
-	} else {
-		sel.nb.x = MIN(sel.ob.x, sel.oe.x);
-		sel.ne.x = MAX(sel.ob.x, sel.oe.x);
-	}
-	sel.nb.y = MIN(sel.ob.y, sel.oe.y);
-	sel.ne.y = MAX(sel.ob.y, sel.oe.y);
+  if (sel.type == SEL_REGULAR && sel.ob.y != sel.oe.y) {
+    sel.nb.x = sel.ob.y < sel.oe.y ? sel.ob.x : sel.oe.x;
+    sel.ne.x = sel.ob.y < sel.oe.y ? sel.oe.x : sel.ob.x;
+  } else {
+    sel.nb.x = MIN(sel.ob.x, sel.oe.x);
+    sel.ne.x = MAX(sel.ob.x, sel.oe.x);
+  }
+  sel.nb.y = MIN(sel.ob.y, sel.oe.y);
+  sel.ne.y = MAX(sel.ob.y, sel.oe.y);
 
-	selsnap(&sel.nb.x, &sel.nb.y, -1);
-	selsnap(&sel.ne.x, &sel.ne.y, +1);
+  selsnap(&sel.nb.x, &sel.nb.y, -1);
+  selsnap(&sel.ne.x, &sel.ne.y, +1);
 
-	/* expand selection over line breaks */
-	if (sel.type == SEL_RECTANGULAR)
-		return;
-	i = tlinelen(sel.nb.y);
-	if (i < sel.nb.x)
-		sel.nb.x = i;
-	if (tlinelen(sel.ne.y) <= sel.ne.x)
-		sel.ne.x = term.col - 1;
+  /* expand selection over line breaks */
+  if (sel.type == SEL_RECTANGULAR)
+    return;
+  i = tlinelen(sel.nb.y);
+  if (i < sel.nb.x)
+    sel.nb.x = i;
+  if (tlinelen(sel.ne.y) <= sel.ne.x)
+    sel.ne.x = term.col - 1;
 }
 
 int
 selected(int x, int y)
 {
-	if (sel.mode == SEL_EMPTY || sel.ob.x == -1 ||
-			sel.alt != IS_SET(MODE_ALTSCREEN))
-		return 0;
+  if (sel.mode == SEL_EMPTY || sel.ob.x == -1 ||
+      sel.alt != IS_SET(MODE_ALTSCREEN))
+    return 0;
 
-	if (sel.type == SEL_RECTANGULAR)
-		return BETWEEN(y, sel.nb.y, sel.ne.y)
-		    && BETWEEN(x, sel.nb.x, sel.ne.x);
+  if (sel.type == SEL_RECTANGULAR)
+    return BETWEEN(y, sel.nb.y, sel.ne.y)
+      && BETWEEN(x, sel.nb.x, sel.ne.x);
 
-	return BETWEEN(y, sel.nb.y, sel.ne.y)
-	    && (y != sel.nb.y || x >= sel.nb.x)
-	    && (y != sel.ne.y || x <= sel.ne.x);
+  return BETWEEN(y, sel.nb.y, sel.ne.y)
+    && (y != sel.nb.y || x >= sel.nb.x)
+    && (y != sel.ne.y || x <= sel.ne.x);
 }
 
 void
 selsnap(int *x, int *y, int direction)
 {
-	int newx, newy, xt, yt;
-	int delim, prevdelim;
-	Glyph *gp, *prevgp;
+  int newx, newy, xt, yt;
+  int delim, prevdelim;
+  Glyph *gp, *prevgp;
 
-	switch (sel.snap) {
-	case SNAP_WORD:
-		/*
-		 * Snap around if the word wraps around at the end or
-		 * beginning of a line.
-		 */
-		prevgp = &term.line[*y][*x];
-		prevdelim = ISDELIM(prevgp->u);
-		for (;;) {
-			newx = *x + direction;
-			newy = *y;
-			if (!BETWEEN(newx, 0, term.col - 1)) {
-				newy += direction;
-				newx = (newx + term.col) % term.col;
-				if (!BETWEEN(newy, 0, term.row - 1))
-					break;
+  switch (sel.snap) {
+  case SNAP_WORD:
+    /*
+     * Snap around if the word wraps around at the end or
+     * beginning of a line.
+     */
+    prevgp = &term.line[*y][*x];
+    prevdelim = ISDELIM(prevgp->u);
+    for (;;) {
+      newx = *x + direction;
+      newy = *y;
+      if (!BETWEEN(newx, 0, term.col - 1)) {
+	newy += direction;
+	newx = (newx + term.col) % term.col;
+	if (!BETWEEN(newy, 0, term.row - 1))
+	  break;
 
-				if (direction > 0)
-					yt = *y, xt = *x;
-				else
-					yt = newy, xt = newx;
-				if (!(term.line[yt][xt].mode & ATTR_WRAP))
-					break;
-			}
+	if (direction > 0)
+	  yt = *y, xt = *x;
+	else
+	  yt = newy, xt = newx;
+	if (!(term.line[yt][xt].mode & ATTR_WRAP))
+	  break;
+      }
 
-			if (newx >= tlinelen(newy))
-				break;
+      if (newx >= tlinelen(newy))
+	break;
 
-			gp = &term.line[newy][newx];
-			delim = ISDELIM(gp->u);
-			if (!(gp->mode & ATTR_WDUMMY) && (delim != prevdelim
+      gp = &term.line[newy][newx];
+      delim = ISDELIM(gp->u);
+      if (!(gp->mode & ATTR_WDUMMY) && (delim != prevdelim
 					|| (delim && gp->u != prevgp->u)))
-				break;
+	break;
 
-			*x = newx;
-			*y = newy;
-			prevgp = gp;
-			prevdelim = delim;
-		}
-		break;
+      *x = newx;
+      *y = newy;
+      prevgp = gp;
+      prevdelim = delim;
+    }
+    break;
 	case SNAP_LINE:
 		/*
 		 * Snap around if the the previous line or the current one
@@ -1881,7 +1913,8 @@ strhandle(void)
 			/* FALLTHROUGH */
 		case 104: /* color reset, here p = NULL */
 			j = (narg > 1) ? atoi(strescseq.args[1]) : -1;
-			if (xsetcolorname(j, p)) {
+		  char **colorname = get_colorname(colorname_def);
+		  if (xsetcolorname(j, p, colorname)) {
 				if (par == 104 && narg <= 1)
 					return; /* color reset without parameter */
 				fprintf(stderr, "erresc: invalid color j=%d, p=%s\n",
@@ -2272,7 +2305,8 @@ eschandle(uchar ascii)
 	case 'c': /* RIS -- Reset to initial state */
 		treset();
 		resettitle();
-		xloadcols();
+		char **colorname = get_colorname(colorname_def);
+		xloadcols(colorname);
 		break;
 	case '=': /* DECPAM -- Application keypad */
 		xsetmode(1, MODE_APPKEYPAD);

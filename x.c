@@ -150,11 +150,11 @@ static int ximopen(Display *);
 static void ximinstantiate(Display *, XPointer, XPointer);
 static void ximdestroy(XIM, XPointer, XPointer);
 static int xicdestroy(XIC, XPointer, XPointer);
-static void xinit(int, int);
+static void xinit(int, int, char**);
 static void cresize(int, int);
 static void xresize(int, int);
 static void xhints(void);
-static int xloadcolor(int, const char *, Color *);
+static int xloadcolor(int, const char *, Color *, char **);
 static int xloadfont(Font *, FcPattern *);
 static void xloadfonts(char *, double);
 static void xunloadfont(Font *);
@@ -749,9 +749,8 @@ sixd_to_16bit(int x)
 }
 
 int
-xloadcolor(int i, const char *name, Color *ncolor)
+xloadcolor(int i, const char *name, Color *ncolor, char **colorname)
 {
-  char **colorname = get_colorname(colorname_def);
 	XRenderColor color = { .alpha = 0xffff };
 
 	if (!name) {
@@ -774,9 +773,8 @@ xloadcolor(int i, const char *name, Color *ncolor)
 }
 
 void
-xloadcols(void)
+xloadcols(char **colorname)
 {
-  char **colorname = get_colorname(colorname_def);
 	int i;
 	static int loaded;
 	Color *cp;
@@ -790,7 +788,7 @@ xloadcols(void)
 	}
 
 	for (i = 0; i < dc.collen; i++)
-		if (!xloadcolor(i, NULL, &dc.col[i])) {
+	  if (!xloadcolor(i, NULL, &dc.col[i], colorname)) {
 			if (colorname[i])
 				die("could not allocate color '%s'\n", colorname[i]);
 			else
@@ -800,14 +798,14 @@ xloadcols(void)
 }
 
 int
-xsetcolorname(int x, const char *name)
+xsetcolorname(int x, const char *name, char **colorname)
 {
 	Color ncolor;
 
 	if (!BETWEEN(x, 0, dc.collen))
 		return 1;
 
-	if (!xloadcolor(x, name, &ncolor))
+	if (!xloadcolor(x, name, &ncolor, colorname))
 		return 1;
 
 	XftColorFree(xw.dpy, xw.vis, xw.cmap, &dc.col[x]);
@@ -1098,9 +1096,8 @@ xicdestroy(XIC xim, XPointer client, XPointer call)
 }
 
 void
-xinit(int cols, int rows)
+xinit(int cols, int rows, char **colorname)
 {
-  char **colorname = get_colorname(colorname_def);
 	XGCValues gcvalues;
 	Cursor cursor;
 	Window parent;
@@ -1121,7 +1118,7 @@ xinit(int cols, int rows)
 
 	/* colors */
 	xw.cmap = XDefaultColormap(xw.dpy, xw.scr);
-	xloadcols();
+	xloadcols(colorname);
 
 	/* adjust fixed window geometry */
 	win.w = 2 * borderpx + cols * win.cw;
@@ -2049,7 +2046,8 @@ run:
 	cols = MAX(cols, 1);
 	rows = MAX(rows, 1);
 	tnew(cols, rows);
-	xinit(cols, rows);
+	char **colorname = get_colorname(colorname_def);
+	xinit(cols, rows, colorname);
 	xsetenv();
 	selinit();
 	run();

@@ -1,4 +1,3 @@
-#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,17 +8,19 @@
 #define COLOR_DARK_FN  ".color-dark"
 
 char **get_colorname (char **def) {
-  time_t t = time(NULL);
-  struct tm *T = localtime(&t);
+  char buf[2048], path[2048];
   char *home = getenv("HOME");
-  char path[2048];  
   static char c[COLOR_NUM][COLOR_LEN];
   
-  if(T->tm_hour > 6 && T->tm_hour <= 22)
-    sprintf(path, "%s/%s", home, COLOR_LIGHT_FN);
-  else sprintf(path, "%s/%s", home, COLOR_DARK_FN);
+  FILE *f = fopen("/sys/devices/platform/applesmc.768/light", "r");
+  fgets(buf, 3, f);
+  fclose(f);
   
-  FILE *f = fopen(path, "r");
+  if((buf[1]-0x30) > 2) strcpy(buf, COLOR_LIGHT_FN);
+  else strcpy(buf, COLOR_DARK_FN);
+  sprintf(path, "%s/%s", home, buf);
+  
+  f = fopen(path, "r");
   for(int i = 0; i < COLOR_NUM; i++) {
     fgets(c[i], COLOR_LEN, f);
     c[i][COLOR_LEN-2] = '\0';
@@ -28,6 +29,7 @@ char **get_colorname (char **def) {
   
   def[0] = c[0]; /* Background */
   def[7] = c[1]; /* Foreground */
-  
+  def[15] = c[1]; /* Cursor Color */
+
   return def;
 }
