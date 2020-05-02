@@ -9,7 +9,6 @@
 
 char **get_colorname (char **def) {
 	char buf[2048], path[2048];
-	char *home = getenv("HOME");
 	static char c[COLOR_NUM][COLOR_LEN];
   
 	FILE *f = fopen("/sys/devices/platform/applesmc.768/light", "r");
@@ -18,7 +17,7 @@ char **get_colorname (char **def) {
   
 	if((buf[1]-0x30) > 2) strcpy(buf, COLOR_LIGHT_FN);
 	else strcpy(buf, COLOR_DARK_FN);
-	sprintf(path, "%s/%s", home, buf);
+	sprintf(path, "%s/%s", getenv("HOME"), buf);
   
 	f = fopen(path, "r");
 	for(int i = 0; i < COLOR_NUM; i++) {
