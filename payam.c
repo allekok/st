@@ -4,21 +4,17 @@
 
 #define COLOR_NUM 4
 #define COLOR_LEN 9
-#define COLOR_LIGHT_FN ".color-light"
-#define COLOR_DARK_FN  ".color-dark"
 
 char **get_colorname (char **def) {
 	char buf[2048], path[2048];
 	static char c[COLOR_NUM][COLOR_LEN];
-  
-	FILE *f = fopen("/sys/devices/platform/applesmc.768/light", "r");
-	fgets(buf, 3, f);
+
+	sprintf(path, "%s/.color-now", getenv("HOME"));
+	FILE *f = fopen(path, "r");
+	fgets(buf, sizeof(buf), f);
 	fclose(f);
   
-	if((buf[1]-0x30) > 2) strcpy(buf, COLOR_LIGHT_FN);
-	else strcpy(buf, COLOR_DARK_FN);
-	sprintf(path, "%s/%s", getenv("HOME"), buf);
-  
+	sprintf(path, "%s/.color-%s", getenv("HOME"), buf);
 	f = fopen(path, "r");
 	for(int i = 0; i < COLOR_NUM; i++) {
 		fgets(c[i], COLOR_LEN, f);
