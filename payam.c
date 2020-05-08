@@ -6,16 +6,13 @@
 #define COLOR_LEN 9
 
 char **get_colorname (char **def) {
-	char buf[2048], path[2048];
+	char path[1024];
 	static char c[COLOR_NUM][COLOR_LEN];
-
-	sprintf(path, "%s/.color-now", getenv("HOME"));
+	
+	sprintf(path, "%s/.color-%s",
+		getenv("HOME"),
+		getenv("COLORNOW"));
 	FILE *f = fopen(path, "r");
-	fgets(buf, sizeof(buf), f);
-	fclose(f);
-  
-	sprintf(path, "%s/.color-%s", getenv("HOME"), buf);
-	f = fopen(path, "r");
 	for(int i = 0; i < COLOR_NUM; i++) {
 		fgets(c[i], COLOR_LEN, f);
 		c[i][COLOR_LEN-2] = '\0';
