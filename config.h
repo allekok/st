@@ -168,9 +168,9 @@ static MouseShortcut mshortcuts[] = {
 
 /* Internal keyboard shortcuts. */
 #define MODKEY Mod1Mask
-#define TERMMOD (ControlMask)
-#define XK_equal                         0x003d  /* U+003D EQUALS SIGN */
-#define XK_minus                         0x002d  /* U+002D HYPHEN-MINUS */
+#define TERMMOD (ControlMask|ShiftMask)
+#define XK_plus                          0x002b  /* U+002B PLUS SIGN */
+#define XK_underscore                    0x005f  /* U+005F LOW LINE */
 #define XK_0                             0x0030  /* U+0030 DIGIT ZERO */
 
 static Shortcut shortcuts[] = {
@@ -179,8 +179,8 @@ static Shortcut shortcuts[] = {
 	{ ControlMask,          XK_Print,       toggleprinter,  {.i =  0} },
 	{ ShiftMask,            XK_Print,       printscreen,    {.i =  0} },
 	{ XK_ANY_MOD,           XK_Print,       printsel,       {.i =  0} },
-	{ TERMMOD,              XK_equal,       zoom,           {.f = +1} },
-	{ TERMMOD,              XK_minus,       zoom,           {.f = -1} },
+	{ TERMMOD,              XK_plus,        zoom,           {.f = +1} },
+	{ TERMMOD,              XK_underscore,  zoom,           {.f = -1} },
 	{ TERMMOD,              XK_0,           zoomreset,      {.f =  0} },
 	{ TERMMOD,              XK_C,           clipcopy,       {.i =  0} },
 	{ TERMMOD,              XK_V,           clippaste,      {.i =  0} },
