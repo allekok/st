@@ -171,7 +171,7 @@ static MouseShortcut mshortcuts[] = {
 #define TERMMOD (ControlMask|ShiftMask)
 #define XK_plus                          0x002b  /* U+002B PLUS SIGN */
 #define XK_underscore                    0x005f  /* U+005F LOW LINE */
-#define XK_0                             0x0030  /* U+0030 DIGIT ZERO */
+#define XK_parenright                    0x0029  /* U+0029 RIGHT PARENTHESIS */
 
 static Shortcut shortcuts[] = {
 	/* mask                 keysym          function        argument */
@@ -181,7 +181,7 @@ static Shortcut shortcuts[] = {
 	{ XK_ANY_MOD,           XK_Print,       printsel,       {.i =  0} },
 	{ TERMMOD,              XK_plus,        zoom,           {.f = +1} },
 	{ TERMMOD,              XK_underscore,  zoom,           {.f = -1} },
-	{ TERMMOD,              XK_0,           zoomreset,      {.f =  0} },
+	{ TERMMOD,              XK_parenright,  zoomreset,      {.f =  0} },
 	{ TERMMOD,              XK_C,           clipcopy,       {.i =  0} },
 	{ TERMMOD,              XK_V,           clippaste,      {.i =  0} },
 	{ TERMMOD,              XK_Y,           selpaste,       {.i =  0} },
