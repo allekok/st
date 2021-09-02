@@ -8,7 +8,7 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "SourceCodePro:weight=bold:pixelsize=14:antialias=true:autohint=true";
+static char *font = "SourceCodePro:weight=regular:pixelsize=15:antialias=true:autohint=true";
 static int borderpx = 2;
 
 /*
