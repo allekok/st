@@ -1,1 +1,1 @@
-char **get_colorname (char **);
+char **get_colorname(char**);
